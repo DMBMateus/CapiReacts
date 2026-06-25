@@ -103,8 +103,13 @@ app.post('/api/users/:id/friends', async (req, res) => {
 // GET /api/users/1/friends
 app.get('/api/users/:id/friends', async (req, res) => {
     const user = await User.findByPk(req.params.id, {
-        include: { model: User, as: 'friends' }, // pulls in the related users via Friendship
+        include: { model: User, as: 'friends' },
     });
+
+    if (!user) {
+        return res.json([]);
+    }
+
     res.json(user.friends);
 });
 
