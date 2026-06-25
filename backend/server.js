@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/database');
@@ -8,7 +7,9 @@ const Post = require('./models/Post');
 const PostLike = require('./models/PostLike');
 const PostShare = require('./models/PostShare');
 const { Op } = require('sequelize'); // ← add this at the top of server.js
-
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
 const app = express();
 const path = require('path');
