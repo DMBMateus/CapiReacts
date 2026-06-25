@@ -1,6 +1,6 @@
 import BACKEND_URL from '../config';
 import '../Components_CSS/App.css';
-import {ThemeProvider, createTheme, CssBaseline, Button} from '@mui/material';
+import {ThemeProvider, createTheme, CssBaseline, Button, TextField} from '@mui/material';
 import { createContext, useState, useMemo } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Drawer } from '@mui/material';
@@ -18,6 +18,87 @@ import capi_arm from "../Assets/capi_arm.png"
 export const ThemeContext = createContext();
 export const FriendContext = createContext();
 export const ProfileContext = createContext();
+
+function LoginPage({ onLogin }) {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleLogin = async () => {
+        if (!name.trim() || !email.trim()) {
+            setError('Please enter your name and email.');
+            return;
+        }
+        setLoading(true);
+        setError('');
+
+        try {
+            // Check if user with this email already exists
+            const res = await fetch(`${BACKEND_URL}/api/users`);
+            const users = await res.json();
+            const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+            if (existing) {
+                // User exists → log in
+                onLogin(String(existing.id));
+            } else {
+                // User doesn't exist → register
+                const createRes = await fetch(`${BACKEND_URL}/api/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, online: true }),
+                });
+                const newUser = await createRes.json();
+                if (newUser.id) {
+                    onLogin(String(newUser.id));
+                } else {
+                    setError('Failed to create user. Try again.');
+                }
+            }
+        } catch (err) {
+            setError('Could not connect to server. Try again.');
+        }
+        setLoading(false);
+    };
+
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            gap: '1rem',
+        }}>
+            <h1>Welcome to CapiReacts</h1>
+            <p style={{ color: '#666' }}>Enter your details to log in or register</p>
+            <TextField
+                label="Name"
+                variant="outlined"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                style={{ width: '300px' }}
+            />
+            <TextField
+                label="Email"
+                variant="outlined"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                style={{ width: '300px' }}
+            />
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <Button
+                variant="contained"
+                onClick={handleLogin}
+                disabled={loading}
+                style={{ width: '300px' }}
+            >
+                {loading ? 'Loading...' : 'Login / Register'}
+            </Button>
+        </div>
+    );
+}
 
 function LandingPage({ onBannerClick }) {
     return (
@@ -50,9 +131,13 @@ function App() {
     const [mode, setMode] = useState('light');
     const [selectedFriend, setSelectedFriend] = useState(null);
     const [showRemoveFriendButton, setShowRemoveFriendButton] = useState(true);
-    const [profile, setProfile] = useState("4");
-    const [friendsList, setFriendsList] = useState([]); // ← moved here from Friends.js
+    const [profile, setProfile] = useState(null); // ← null until logged in
+    const [friendsList, setFriendsList] = useState([]);
     const [phase, setPhase] = useState('idle');
+
+    const handleLogin = (userId) => {
+        setProfile(userId);
+    };
 
     const handleBannerClick = () => {
         if (phase !== 'idle') return;
@@ -74,7 +159,7 @@ function App() {
             .then(res => res.json())
             .then(data => {
                 if (data.message === 'Friendship removed') {
-                    setFriendsList(prev => prev.filter(f => f.id !== friendId)); // ← remove instantly
+                    setFriendsList(prev => prev.filter(f => f.id !== friendId));
                     closeFriendDrawer();
                 } else {
                     console.error('Failed to remove friend:', data.error);
@@ -91,7 +176,6 @@ function App() {
     const closeFriendDrawer = () => setSelectedFriend(null);
     const currentProfile = userId => setProfile(userId);
 
-
     const theme = useMemo(
         () => createTheme({
             palette: {
@@ -104,9 +188,19 @@ function App() {
         [mode]
     );
 
+    // Show login page if not logged in
+    if (!profile) {
+        return (
+            <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <LoginPage onLogin={handleLogin} />
+            </ThemeProvider>
+        );
+    }
+
     return (
         <ThemeContext.Provider value={{ mode, toggleTheme }}>
-            <FriendContext.Provider value={{ openFriendDrawer, friendsList, setFriendsList }}> {/* ← add friendsList here */}
+            <FriendContext.Provider value={{ openFriendDrawer, friendsList, setFriendsList }}>
                 <ProfileContext.Provider value={{ profile, currentProfile }}>
                     <ThemeProvider theme={theme}>
                         <CssBaseline />
