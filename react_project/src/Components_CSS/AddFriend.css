@@ -1,0 +1,30 @@
+.friends_add {
+    background-color: #bfdbf7;
+    padding: 0.8vw;
+    margin: 1vw;
+    border-radius: 10px;
+    min-width: 970px;
+    flex-shrink: 1;
+}
+
+.searchContainer {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.searchBar {
+    width: 400px;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+    width: fit-content;
+}
+
+.button_friend{
+    align-items: flex-end;
+}

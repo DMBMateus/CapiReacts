@@ -1,0 +1,85 @@
+.container {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;         /* ← smaller gap */
+    align-items: center;
+    width: fit-content;
+}
+
+.friend-img-post {
+    /* use the same fixed avatar size so post avatars match profile avatars */
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+    max-width: 56px;
+    max-height: 56px;
+    aspect-ratio: 1 / 1;
+    display: block;
+    border-radius: 50%; /* keeps image circular */
+    object-fit: cover;   /* ensures the image fills the box without distortion */
+    object-position: center;
+    flex-shrink: 0;
+}
+
+.like_button{
+    width: 3%;
+}
+
+.like_button:hover{
+    width: 3.5%;
+    transform: rotate(-10deg);
+    transition: .2s;
+}
+
+.share-icon {
+    cursor: pointer;
+    margin-left: 1rem;
+    font-size: 1.5rem;
+    color: #555;
+    transition: all 0.2s ease;
+}
+
+.share-icon:hover {
+    color: #db222a;
+    transform: scale(1.2);
+}
+
+.posts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    max-width: 800px;
+}
+
+.post-card {
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* subtle shadow to lift the card */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;        /* space between elements inside the card */
+}
+
+.post-card h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.post-card p {
+    margin: 0;
+    color: #555;
+    line-height: 1.6;   /* makes long content easier to read */
+}
+
+/* Styling for shared posts with orange background */
+.post-card-shared h2,
+.post-card-shared h3 {
+    color: #333;
+}
+
+.post-card-shared p {
+    color: #333;
+}
+

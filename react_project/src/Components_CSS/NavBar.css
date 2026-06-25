@@ -1,0 +1,77 @@
+.nav {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #db222a;
+    gap: 1rem;
+    height: fit-content;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: fit-content;
+}
+
+.nav-item {
+    color: white;
+    text-decoration: none;
+}
+
+.nav-item-right {
+    margin-left: auto;
+    color: white;
+    text-decoration: none;
+    padding: 0;
+}
+
+.logo-wrapper {
+    position: relative;  /* anchor for absolute children */
+    width: 80px;         /* adjust to fit your images */
+    height: 50px;        /* adjust to fit your images */
+}
+
+.home-img {
+    position: absolute;
+    top: -5px;
+    left: 0;
+    width: 80%;
+}
+
+.capi-name-img {
+    position: absolute;
+    top: 5px;
+    left: 54px;
+    width: 120%;
+}
+
+.option:hover {
+    transform: scale(1.2);
+    opacity: 0.9;
+}
+
+.profile-img{
+    margin-left: auto;
+    /* match other avatar sizes and force circular shape */
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+    max-width: 56px !important;
+    max-height: 56px !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    display: block !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    flex-shrink: 0 !important;
+    cursor: pointer; /* indicates clickable */
+}
+
+.drawer-content {
+    width: 300px;
+    padding: 2rem;
+    box-sizing: border-box;
+}
