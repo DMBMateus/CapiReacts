@@ -1,3 +1,4 @@
+import BACKEND_URL from '../../config';
 import {useEffect, useState, useContext} from "react";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -16,12 +17,12 @@ function Users({ search }) { // ← receive search prop
     const theme = useTheme();
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/users')
+        fetch(`${BACKEND_URL}/api/users`)
             .then(res => res.json())
             .then(data => setUsersList(data))
             .catch(err => console.error('Failed to fetch users:', err));
 
-        fetch(`http://localhost:5000/api/users/${profile}/friends`)
+        fetch(`${BACKEND_URL}/api/users/${profile}/friends`)
             .then(res => res.json())
             .then(data => setFriendsList(data))
             .catch(err => console.error('Failed to fetch friends:', err));
@@ -38,7 +39,7 @@ function Users({ search }) { // ← receive search prop
         );
 
     const handleAddFriend = (friendId) => {
-        fetch(`http://localhost:5000/api/users/${profile}/friends`, {
+        fetch(`${BACKEND_URL}/api/users/${profile}/friends`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ friendId: friendId }),

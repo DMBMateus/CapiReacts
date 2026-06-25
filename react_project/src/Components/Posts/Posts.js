@@ -1,3 +1,4 @@
+import BACKEND_URL from '../../config';
 import { useState, useEffect, useContext } from 'react';
 import '../../Components_CSS/Posts.css';
 import user_icon from "../../Assets/user_icon.png";
@@ -19,7 +20,7 @@ function Posts() {
     const theme = useTheme();
 
     useEffect(() => {
-        fetch(`http://localhost:5000/api/posts/user/${profile}`)
+        fetch(`${BACKEND_URL}/api/posts/user/${profile}`)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
@@ -37,7 +38,7 @@ function Posts() {
                     }
                     // For each post, check if current user already liked it
                     data.forEach(post => {
-                        fetch(`http://localhost:5000/api/posts/${post.id}/likes?userId=${profile}`)
+                        fetch(`${BACKEND_URL}/api/posts/${post.id}/likes?userId=${profile}`)
                             .then(res => res.json())
                             .then(({ liked }) => {
                                 setLikedPosts(prev => ({ ...prev, [post.id]: liked }));
@@ -65,7 +66,7 @@ function Posts() {
     });
 
     const handleUnshare = (postId) => {
-        fetch(`http://localhost:5000/api/posts/${postId}/share/${profile}`, {
+        fetch(`${BACKEND_URL}/api/posts/${postId}/share/${profile}`, {
             method: 'DELETE',
         })
             .then(res => res.json())
@@ -82,7 +83,7 @@ function Posts() {
     };
 
     const handleLike = (postId) => {
-        fetch(`http://localhost:5000/api/posts/${postId}/like`, {
+        fetch(`${BACKEND_URL}/api/posts/${postId}/like`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: profile }),
@@ -129,7 +130,7 @@ function Posts() {
         setSelectedPostForShare(null);
 
         // Send to backend
-        fetch(`http://localhost:5000/api/posts/${postIdToShare}/share`, {
+        fetch(`${BACKEND_URL}/api/posts/${postIdToShare}/share`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, sharedBy: profile }),
@@ -201,7 +202,7 @@ function Posts() {
                             </div>
                         )}
                         <div className="container" style={{ cursor: 'pointer' }} onClick={() => handleAuthorClick(post)}>
-                            <img className="friend-img-post" src={post.User?.profile_picture ? (post.User.profile_picture.startsWith('http') ? post.User.profile_picture : `http://localhost:5000${post.User.profile_picture}`) : user_icon} alt="Profile Icon"/>
+                            <img className="friend-img-post" src={post.User?.profile_picture ? (post.User.profile_picture.startsWith('http') ? post.User.profile_picture : `${BACKEND_URL}${post.User.profile_picture}`) : user_icon} alt="Profile Icon"/>
                             <h3>{post.User?.name}</h3>
                         </div>
                         <h2>{post.title}</h2>

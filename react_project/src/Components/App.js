@@ -1,3 +1,4 @@
+import BACKEND_URL from '../config';
 import '../Components_CSS/App.css';
 import {ThemeProvider, createTheme, CssBaseline, Button} from '@mui/material';
 import { createContext, useState, useMemo } from 'react';
@@ -67,7 +68,7 @@ function App() {
     };
 
     const removeFriend = (friendId) => {
-        fetch(`http://localhost:5000/api/users/${profile}/friends/${friendId}`, {
+        fetch(`${BACKEND_URL}/api/users/${profile}/friends/${friendId}`, {
             method: 'DELETE',
         })
             .then(res => res.json())

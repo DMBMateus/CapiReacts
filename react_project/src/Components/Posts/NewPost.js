@@ -1,3 +1,4 @@
+import BACKEND_URL from '../../config';
 import { useState, useContext } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
 import new_post from "../../Assets/new_post.png";
@@ -30,7 +31,7 @@ function NewPost() {
                 content: postContent,
                 user_id: Number(profile)
             };
-            const res = await fetch(`http://localhost:5000/api/posts`, {
+            const res = await fetch(`${BACKEND_URL}/api/posts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

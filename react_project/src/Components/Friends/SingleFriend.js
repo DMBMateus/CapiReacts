@@ -1,3 +1,4 @@
+import BACKEND_URL from '../../config';
 import { useContext } from 'react';
 import { FriendContext } from '../App';
 import '../../Components_CSS/Friends.css';
@@ -25,7 +26,7 @@ function SingleFriend(props) {
             })}
         >
             <div className="avatar-wrapper">
-                <img className="friend-img" src={props.profile_picture ? (props.profile_picture.startsWith('http') ? props.profile_picture : `http://localhost:5000${props.profile_picture}`) : user_icon} alt="Profile Icon"/>
+                <img className="friend-img" src={props.profile_picture ? (props.profile_picture.startsWith('http') ? props.profile_picture : `${BACKEND_URL}${props.profile_picture}`) : user_icon} alt="Profile Icon"/>
                 <span className={`status-dot ${props.online ? 'online' : 'offline'}`}></span>
             </div>
             <h2 className="status" style={{

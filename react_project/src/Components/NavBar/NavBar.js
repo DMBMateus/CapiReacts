@@ -1,3 +1,4 @@
+import BACKEND_URL from '../../config';
 import {useState, useEffect, useContext} from 'react';
 import { Link } from 'react-router-dom';
 import { Drawer, Menu, MenuItem } from '@mui/material';
@@ -19,7 +20,7 @@ function Navbar() {
 
     // Fetch the user data once when Navbar mounts
     useEffect(() => {
-        fetch('http://localhost:5000/api/users/' + profile) // ← replace 1 with the actual logged-in user's id
+        fetch(`${BACKEND_URL}/api/users/${profile}`) // ← replace 1 with the actual logged-in user's id
             .then(res => res.json())
             .then(data => setCurrentUser(data))
             .catch(err => console.error('Failed to fetch user:', err));
@@ -47,7 +48,7 @@ function Navbar() {
                     className="nav-item nav-item-right profile-img option"
                     src={
                         currentUser && currentUser.profile_picture
-                            ? (currentUser.profile_picture.startsWith('http') ? currentUser.profile_picture : `http://localhost:5000${currentUser.profile_picture}`)
+                            ? (currentUser.profile_picture.startsWith('http') ? currentUser.profile_picture : `${BACKEND_URL}${currentUser.profile_picture}`)
                             : user_icon
                     }
                     onClick={handleMenuOpen}

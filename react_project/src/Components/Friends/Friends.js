@@ -1,3 +1,4 @@
+import BACKEND_URL from '../../config';
 import {useEffect, useContext} from 'react';
 import '../../Components_CSS/Friends.css';
 import SingleFriend from "./SingleFriend";
@@ -10,7 +11,7 @@ function Friends() {
     const theme = useTheme();
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/users/' + profile + '/friends')
+        fetch(`${BACKEND_URL}/api/users/` + profile + '/friends')
             .then(res => res.json())
             .then(data => setFriendsList(data))
             .catch(err => console.error('Failed to fetch friends:', err));

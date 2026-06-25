@@ -1,15 +1,14 @@
+import BACKEND_URL from '../../config';
 import { useRef, useState, useContext } from 'react';
 import user_icon from "../../Assets/user_icon.png";
 import '../../Components_CSS/Profile.css';
 import { ProfileContext } from "../App";
 
-const BACKEND_BASE = 'http://localhost:5000';
-
 function normalizeSrc(src) {
     if (!src) return user_icon;
     if (typeof src !== 'string') return user_icon;
     if (src.startsWith('http://') || src.startsWith('https://')) return src;
-    if (src.startsWith('/')) return `${BACKEND_BASE}${src}`; // e.g. /uploads/...
+    if (src.startsWith('/')) return `${BACKEND_URL}${src}`; // e.g. /uploads/...
     // fallback for relative paths stored in DB (like '../../Assets/...')
     return user_icon;
 }
@@ -35,7 +34,7 @@ function Profile(props) {
             const form = new FormData();
             form.append('image', file);
 
-            const uploadUrl = `http://localhost:5000/api/users/${currentProfile}/profile_picture`;
+            const uploadUrl = `${BACKEND_URL}/api/users/${currentProfile}/profile_picture`;
             const res = await fetch(uploadUrl, {
                 method: 'POST',
                 body: form,
