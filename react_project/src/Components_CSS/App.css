@@ -1,7 +1,3 @@
-html, body {
-  min-height: 100vh;
-  overflow-y: auto;
-}
 
 .App {
   text-align: center;
@@ -13,9 +9,9 @@ html, body {
   align-items: flex-start;
   gap: 1rem;
   padding: 1rem;
-  max-width: 100vw;
-  overflow-x: hidden;
-  min-height: calc(100vh - 64px); /* account for navbar height */
+  max-width: 100%;
+  min-height: calc(100vh - 64px);
+  box-sizing: border-box;
 }
 
 @keyframes wobble {
