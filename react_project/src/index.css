@@ -1,17 +1,14 @@
-
 html {
-  height: 100%;
+  height: auto !important;
+  min-height: 100vh;
 }
 
 body {
-  min-height: 100%;
-  overflow-y: scroll;
+  min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
 body {
