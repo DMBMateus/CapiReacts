@@ -10,8 +10,8 @@
   gap: 1rem;
   padding: 1rem;
   max-width: 100%;
-  min-height: calc(100vh - 64px);
   box-sizing: border-box;
+  flex: 1;
 }
 
 @keyframes wobble {
