@@ -18,20 +18,26 @@ console.log('Anthropic key loaded:', !!process.env.ANTHROPIC_API_KEY);
 
 const app = express();
 const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'capireacts',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    },
+});
 
 app.use(cors());
 app.use(express.json());
-
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
-}
-
-// Serve uploaded files statically
-app.use('/uploads', express.static(uploadsDir));
 
 // Multer setup for handling image uploads
 const storage = multer.diskStorage({
@@ -256,16 +262,14 @@ app.post('/api/users/:id/profile_picture', upload.single('image'), async (req, r
         const userId = req.params.id;
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-        // Save relative path to DB (served at /uploads)
-        const filePath = `/uploads/${req.file.filename}`;
+        const imageUrl = req.file.path; // ← Cloudinary returns a full URL here
 
         const user = await User.findByPk(userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        user.profile_picture = filePath;
+        user.profile_picture = imageUrl;
         await user.save();
 
-        // Return updated user
         res.json({ id: user.id, profile_picture: user.profile_picture });
     } catch (err) {
         res.status(500).json({ error: err.message });
