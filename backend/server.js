@@ -50,6 +50,9 @@ app.post('/api/users', async (req, res) => {
         if (userData.password) {
             userData.password = await bcrypt.hash(userData.password, 10);
         }
+        if (!userData.profile_picture) {
+            userData.profile_picture = 'https://res.cloudinary.com/dunrmpu0d/image/upload/v1782748626/capireacts/uuqwiutpq3bphomsvzuh.png';
+        }
         const user = await User.create(userData);
         res.json(user);
     } catch (err) {
