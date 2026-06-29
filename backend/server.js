@@ -407,6 +407,35 @@ app.delete('/api/posts/:id', async (req, res) => {
     }
 });
 
+const Anthropic = require('@anthropic-ai/sdk');
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+app.post('/api/moderate', async (req, res) => {
+    const { title, content } = req.body;
+    try {
+        const message = await anthropic.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 100,
+            messages: [
+                {
+                    role: 'user',
+                    content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a JSON object in this exact format, nothing else: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
+                    
+                    Title: ${title}
+                    Content: ${content}`,
+                }
+            ],
+        });
+
+        const result = JSON.parse(message.content[0].text);
+        res.json(result);
+    } catch (err) {
+        console.error('Moderation error:', err);
+        // If moderation fails, allow the post through so users aren't blocked by API errors
+        res.json({ approved: true });
+    }
+});
+
 const PORT = 5000;
 sequelize.sync()
     .then(() => {

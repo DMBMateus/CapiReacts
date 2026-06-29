@@ -1,6 +1,6 @@
 import BACKEND_URL from '../../config';
 import { useState, useContext } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
 import new_post from "../../Assets/new_post.png";
 import '../../Components_CSS/NewPost.css';
 import { ProfileContext } from "../App";
@@ -11,25 +11,43 @@ function NewPost() {
     const [postTitle, setPostTitle] = useState('');
     const [postContent, setPostContent] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleNewPostClick = () => setNewPostOpen(true);
 
     const closeNewPostDialog = () => {
-        if (loading) return; // prevent closing while request in flight
+        if (loading) return;
         setNewPostOpen(false);
         setPostTitle('');
         setPostContent('');
+        setError('');
     };
 
     const handleCreatePost = async () => {
         if (!postTitle.trim() || !postContent.trim() || loading) return;
         setLoading(true);
+        setError('');
+
         try {
-            // POST to /api/posts and include user_id (backend expects /api/posts)
+            // Step 1 — Moderate content before posting
+            const modRes = await fetch(`${BACKEND_URL}/api/moderate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: postTitle, content: postContent }),
+            });
+            const modResult = await modRes.json();
+
+            if (!modResult.approved) {
+                setError(`Your post was rejected: ${modResult.reason}`);
+                setLoading(false);
+                return;
+            }
+
+            // Step 2 — Submit the post if approved
             const payload = {
                 title: postTitle,
                 content: postContent,
-                user_id: Number(profile)
+                user_id: Number(profile),
             };
             const res = await fetch(`${BACKEND_URL}/api/posts`, {
                 method: 'POST',
@@ -46,19 +64,14 @@ function NewPost() {
                 data = { message: text };
             }
 
-            
             if (res.ok || (data && (data.message === 'Post created' || data.id || data._id || data.user_id))) {
-                // success
                 closeNewPostDialog();
-                // refresh posts (simple approach)
                 window.location.reload();
             } else {
-                console.error('Failed to create post:', data);
-                alert('Failed to create post: ' + (data && (data.error || data.message) ? (data.error || data.message) : 'Unknown error'));
+                setError('Failed to create post: ' + (data?.error || data?.message || 'Unknown error'));
             }
         } catch (err) {
-            console.error('Failed to create post:', err);
-            alert('Failed to create post: ' + err.message);
+            setError('Failed to create post: ' + err.message);
         } finally {
             setLoading(false);
         }
@@ -76,6 +89,11 @@ function NewPost() {
             <Dialog open={newPostOpen} onClose={closeNewPostDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>Create New Post</DialogTitle>
                 <DialogContent>
+                    {error && (
+                        <Alert severity="error" style={{ marginBottom: '1rem' }}>
+                            {error}
+                        </Alert>
+                    )}
                     <TextField
                         autoFocus
                         margin="dense"
@@ -105,7 +123,7 @@ function NewPost() {
                         color="primary"
                         disabled={!postTitle.trim() || !postContent.trim() || loading}
                     >
-                        {loading ? 'Posting...' : 'Post'}
+                        {loading ? 'Checking & Posting...' : 'Post'}
                     </Button>
                 </DialogActions>
             </Dialog>
