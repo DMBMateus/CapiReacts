@@ -7,10 +7,14 @@ const Friendship = require('./models/Friendship');
 const Post = require('./models/Post');
 const PostLike = require('./models/PostLike');
 const PostShare = require('./models/PostShare');
-const { Op } = require('sequelize'); // ← add this at the top of server.js
+const { Op } = require('sequelize');
+const Anthropic = require('@anthropic-ai/sdk'); // ← moved up here
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); // ← moved up here
+console.log('Anthropic key loaded:', !!process.env.ANTHROPIC_API_KEY);
 
 const app = express();
 const path = require('path');
@@ -407,31 +411,33 @@ app.delete('/api/posts/:id', async (req, res) => {
     }
 });
 
-const Anthropic = require('@anthropic-ai/sdk');
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 app.post('/api/moderate', async (req, res) => {
     const { title, content } = req.body;
     try {
-        const message = await anthropic.messages.create({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 100,
-            messages: [
-                {
-                    role: 'user',
-                    content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a JSON object in this exact format, nothing else: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
+        const message = await Promise.race([
+            anthropic.messages.create({
+                model: 'claude-haiku-4-5-20251001',
+                max_tokens: 100,
+                messages: [
+                    {
+                        role: 'user',
+                        content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a JSON object in this exact format, nothing else: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
                     
-                    Title: ${title}
-                    Content: ${content}`,
-                }
-            ],
-        });
+Title: ${title}
+Content: ${content}`,
+                    }
+                ],
+            }),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Moderation timed out')), 10000)
+            )
+        ]);
 
-        const result = JSON.parse(message.content[0].text);
+        const text = message.content[0].text.trim();
+        const result = JSON.parse(text);
         res.json(result);
     } catch (err) {
-        console.error('Moderation error:', err);
-        // If moderation fails, allow the post through so users aren't blocked by API errors
+        console.error('Moderation error:', err.message);
         res.json({ approved: true });
     }
 });
