@@ -408,7 +408,7 @@ app.delete('/api/posts/:id', async (req, res) => {
 });
 //--------------------
 
-app.post('/api/admin/hash-passwords', async (req, res) => {
+app.get('/api/admin/hash-passwords', async (req, res) => {
     const users = await User.findAll();
     for (const user of users) {
         if (user.password && !user.password.startsWith('$2b$')) {
