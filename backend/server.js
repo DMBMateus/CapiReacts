@@ -421,7 +421,7 @@ app.post('/api/moderate', async (req, res) => {
                 messages: [
                     {
                         role: 'user',
-                        content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a JSON object in this exact format, nothing else: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
+                        content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a raw JSON object, no markdown, no code fences, no explanation. Only these two formats are allowed: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
                     
 Title: ${title}
 Content: ${content}`,
@@ -433,8 +433,14 @@ Content: ${content}`,
             )
         ]);
 
-        const text = message.content[0].text.trim();
-        const result = JSON.parse(text);
+        // Strip markdown code fences if the model adds them anyway
+        const raw = message.content[0].text.trim()
+            .replace(/^```json\s*/i, '')
+            .replace(/^```\s*/i, '')
+            .replace(/```$/i, '')
+            .trim();
+
+        const result = JSON.parse(raw);
         res.json(result);
     } catch (err) {
         console.error('Moderation error:', err.message);
