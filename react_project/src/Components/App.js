@@ -71,6 +71,10 @@ function LoginPage({ onLogin }) {
             setError('Please enter a valid phone number.');
             return;
         }
+        if (password.length < 5) {
+            setError('Password must be at least 5 characters long.');
+            return;
+        }
         if (password !== confirmPassword) {
             setError('Passwords do not match.');
             return;
