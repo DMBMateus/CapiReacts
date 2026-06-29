@@ -30,6 +30,9 @@ function LoginPage({ onLogin }) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    const isValidPhone = (val) => /^\+?[\d\s\-().]{7,15}$/.test(val);
+
     const handleLogin = async () => {
         if (!email.trim() || !password.trim()) {
             setError('Please enter your email and password.');
@@ -60,6 +63,14 @@ function LoginPage({ onLogin }) {
             setError('Please enter at least your name, email and password.');
             return;
         }
+        if (!isValidEmail(email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+        if (phone.trim() && !isValidPhone(phone)) {
+            setError('Please enter a valid phone number.');
+            return;
+        }
         if (password !== confirmPassword) {
             setError('Passwords do not match.');
             return;
@@ -83,7 +94,7 @@ function LoginPage({ onLogin }) {
                     email,
                     password,
                     phone: phone.trim() || null,
-                    gender: gender.trim() || null,
+                    gender: gender || null,
                     online: true,
                 }),
             });
@@ -169,10 +180,19 @@ function LoginPage({ onLogin }) {
                         style={{ width: '300px' }}
                     />
                     <TextField
-                        label="Gender (optional)" variant="outlined" value={gender}
+                        select
+                        label="Gender (optional)"
+                        variant="outlined"
+                        value={gender}
                         onChange={e => setGender(e.target.value)}
                         style={{ width: '300px' }}
-                    />
+                        SelectProps={{ native: true }}
+                    >
+                        <option value="">Select gender...</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </TextField>
                     {error && <p style={{ color: 'red' }}>{error}</p>}
                     <Button variant="contained" onClick={handleRegister}
                             disabled={loading} style={{ width: '300px' }}>
