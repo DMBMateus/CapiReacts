@@ -1,6 +1,10 @@
 const bcrypt = require('bcrypt');
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const sequelize = require('./config/database');
 const User = require('./models/User');
 const Friendship = require('./models/Friendship');
@@ -8,19 +12,14 @@ const Post = require('./models/Post');
 const PostLike = require('./models/PostLike');
 const PostShare = require('./models/PostShare');
 const { Op } = require('sequelize');
-const Anthropic = require('@anthropic-ai/sdk'); // ← moved up here
+const Anthropic = require('@anthropic-ai/sdk');
+
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); // ← moved up here
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 console.log('Anthropic key loaded:', !!process.env.ANTHROPIC_API_KEY);
-
-const app = express();
-const path = require('path');
-const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -35,23 +34,12 @@ const storage = new CloudinaryStorage({
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     },
 });
+const upload = multer({ storage });
+
+const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-// Multer setup for handling image uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsDir);
-    },
-    filename: function (req, file, cb) {
-        const ext = path.extname(file.originalname);
-        const base = path.basename(file.originalname, ext).replace(/[^a-z0-9_-]/gi, '_');
-        cb(null, `${base}-${Date.now()}${ext}`);
-    }
-});
-const upload = multer({ storage: storage });
-
 
 //------------------------------USERS------------------------------------
 
@@ -69,20 +57,18 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
+// LOGIN — must be before /api/users/:id to avoid 'login' being treated as an id
 app.post('/api/users/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
         const user = await User.findOne({ where: { email } });
         if (!user) {
             return res.status(401).json({ error: 'No account found with that email.' });
         }
-
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             return res.status(401).json({ error: 'Incorrect password.' });
         }
-
         res.json(user);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -103,13 +89,11 @@ app.get('/api/users', async (req, res) => {
 
 //------------------------------FRIENDS------------------------------------
 
-// Add associations for PostShare
 PostShare.belongsTo(User, {
     foreignKey: 'shared_by_user_id',
     as: 'SharedByUser',
 });
 
-// Many-to-many: a User can have many friends, through the Friendship table
 User.belongsToMany(User, {
     through: Friendship,
     as: 'friends',
@@ -117,34 +101,25 @@ User.belongsToMany(User, {
     otherKey: 'friendId',
 });
 
-// POST /api/users/1/friends  { friendId: 2 }
 app.post('/api/users/:id/friends', async (req, res) => {
     try {
         const userId = req.params.id;
         const friendId = req.body.friendId;
-
-        // Create both directions in one go
         await Friendship.bulkCreate([
             { userId: userId, friendId: friendId },
             { userId: friendId, friendId: userId },
         ]);
-
         res.json({ message: 'Friendship created' });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
-// GET /api/users/1/friends
 app.get('/api/users/:id/friends', async (req, res) => {
     const user = await User.findByPk(req.params.id, {
         include: { model: User, as: 'friends' },
     });
-
-    if (!user) {
-        return res.json([]);
-    }
-
+    if (!user) return res.json([]);
     res.json(user.friends);
 });
 
@@ -152,16 +127,14 @@ app.delete('/api/users/:id/friends/:friendId', async (req, res) => {
     try {
         const userId = req.params.id;
         const friendId = req.params.friendId;
-
         await Friendship.destroy({
             where: {
-                [Op.or]: [ // ← Op.or instead of Sequelize.Op.or
+                [Op.or]: [
                     { userId: userId, friendId: friendId },
                     { userId: friendId, friendId: userId },
                 ],
             },
         });
-
         res.json({ message: 'Friendship removed' });
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -170,17 +143,15 @@ app.delete('/api/users/:id/friends/:friendId', async (req, res) => {
 
 //------------------------------POSTS------------------------------------
 
-// Add this association near your other associations (after User and Post imports)
 Post.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(Post, { foreignKey: 'user_id' });
 
-// Then update the GET all posts route:
 app.get('/api/posts', async (req, res) => {
     try {
         const posts = await Post.findAll({
             include: {
                 model: User,
-                attributes: ['name', 'profile_picture', 'id'], // include profile picture and id for frontend
+                attributes: ['name', 'profile_picture', 'id'],
             }
         });
         res.json(posts);
@@ -189,20 +160,15 @@ app.get('/api/posts', async (req, res) => {
     }
 });
 
-// GET all posts with shared posts for a specific user (includes shared flag)
 app.get('/api/posts/user/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-
-        // Get all posts
         const posts = await Post.findAll({
             include: {
                 model: User,
                 attributes: ['name', 'profile_picture', 'id'],
             }
         });
-
-        // Get all shared posts for this user (with sharer info)
         const sharedPosts = await PostShare.findAll({
             where: { shared_with_user_id: userId },
             include: [{
@@ -211,8 +177,6 @@ app.get('/api/posts/user/:userId', async (req, res) => {
                 attributes: ['id', 'name'],
             }]
         });
-
-        // Create a map of post_id -> share info
         const shareMap = {};
         sharedPosts.forEach(share => {
             shareMap[share.post_id] = {
@@ -220,8 +184,6 @@ app.get('/api/posts/user/:userId', async (req, res) => {
                 sharedByUserName: share.SharedByUser?.name || 'Unknown',
             };
         });
-
-        // Mark posts that are shared with this user and add sharer info
         const postsWithShareInfo = posts.map(post => {
             const shareInfo = shareMap[post.id];
             return {
@@ -230,26 +192,20 @@ app.get('/api/posts/user/:userId', async (req, res) => {
                 sharedByUserName: shareInfo?.sharedByUserName || null,
             };
         });
-
-        // Sort: shared posts first, then by creation date
         const sortedPosts = postsWithShareInfo.sort((a, b) => {
             if (a.isSharedWithUser && !b.isSharedWithUser) return -1;
             if (!a.isSharedWithUser && b.isSharedWithUser) return 1;
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
-
         res.json(sortedPosts);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// GET all posts by a specific user
 app.get('/api/users/:id/posts', async (req, res) => {
     try {
-        const posts = await Post.findAll({
-            where: { user_id: req.params.id }
-        });
+        const posts = await Post.findAll({ where: { user_id: req.params.id } });
         res.json(posts);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -261,22 +217,17 @@ app.post('/api/users/:id/profile_picture', upload.single('image'), async (req, r
     try {
         const userId = req.params.id;
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-        const imageUrl = req.file.path; // ← Cloudinary returns a full URL here
-
+        const imageUrl = req.file.path;
         const user = await User.findByPk(userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
-
         user.profile_picture = imageUrl;
         await user.save();
-
         res.json({ id: user.id, profile_picture: user.profile_picture });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// GET a single post by id
 app.get('/api/posts/:id', async (req, res) => {
     try {
         const post = await Post.findByPk(req.params.id);
@@ -286,7 +237,6 @@ app.get('/api/posts/:id', async (req, res) => {
     }
 });
 
-// CREATE a new post
 app.post('/api/posts', async (req, res) => {
     try {
         const post = await Post.create(req.body);
@@ -299,25 +249,18 @@ app.post('/api/posts', async (req, res) => {
 app.patch('/api/posts/:id/like', async (req, res) => {
     try {
         const postId = req.params.id;
-        const userId = req.body.userId; // ← sent from React
-
-        // Check if like already exists
+        const userId = req.body.userId;
         const existingLike = await PostLike.findOne({
             where: { user_id: userId, post_id: postId }
         });
-
         const post = await Post.findByPk(postId);
-
         if (existingLike) {
-            // Already liked → unlike
             await existingLike.destroy();
             post.likes_count -= 1;
         } else {
-            // Not liked yet → like
             await PostLike.create({ user_id: userId, post_id: postId });
             post.likes_count += 1;
         }
-
         await post.save();
         res.json({ likes_count: post.likes_count, liked: !existingLike });
     } catch (err) {
@@ -325,10 +268,9 @@ app.patch('/api/posts/:id/like', async (req, res) => {
     }
 });
 
-// GET likes for a post (to check if current user already liked it)
 app.get('/api/posts/:id/likes', async (req, res) => {
     try {
-        const userId = req.query.userId; // ← /api/posts/1/likes?userId=1
+        const userId = req.query.userId;
         const like = await PostLike.findOne({
             where: { user_id: userId, post_id: req.params.id }
         });
@@ -338,66 +280,39 @@ app.get('/api/posts/:id/likes', async (req, res) => {
     }
 });
 
-// POST /api/posts/:id/share - Share a post with another user
 app.post('/api/posts/:id/share', async (req, res) => {
     try {
         const postId = req.params.id;
-        const sharedWithUserId = req.body.userId; // ← who to share with
-        const sharedByUserId = req.body.sharedBy; // ← who is sharing
-
-        // Validate post exists
+        const sharedWithUserId = req.body.userId;
+        const sharedByUserId = req.body.sharedBy;
         const post = await Post.findByPk(postId);
-        if (!post) {
-            return res.status(404).json({ error: 'Post not found' });
-        }
-
-        // Validate recipient user exists
+        if (!post) return res.status(404).json({ error: 'Post not found' });
         const recipient = await User.findByPk(sharedWithUserId);
-        if (!recipient) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Check if already shared (prevent duplicates)
+        if (!recipient) return res.status(404).json({ error: 'User not found' });
         const existingShare = await PostShare.findOne({
-            where: {
-                post_id: postId,
-                shared_with_user_id: sharedWithUserId,
-            }
+            where: { post_id: postId, shared_with_user_id: sharedWithUserId }
         });
-
         if (existingShare) {
             return res.status(400).json({ message: 'Post already shared with this user' });
         }
-
-        // Create share record
         const share = await PostShare.create({
             post_id: postId,
             shared_by_user_id: sharedByUserId,
             shared_with_user_id: sharedWithUserId,
         });
-
         res.json({ message: 'Post shared successfully', share });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// DELETE /api/posts/:postId/share/:userId - Unshare a post from a specific user
 app.delete('/api/posts/:postId/share/:userId', async (req, res) => {
     try {
         const { postId, userId } = req.params;
-
         const share = await PostShare.findOne({
-            where: {
-                post_id: postId,
-                shared_with_user_id: userId,
-            }
+            where: { post_id: postId, shared_with_user_id: userId }
         });
-
-        if (!share) {
-            return res.status(404).json({ error: 'Share not found' });
-        }
-
+        if (!share) return res.status(404).json({ error: 'Share not found' });
         await share.destroy();
         res.json({ message: 'Share removed successfully' });
     } catch (err) {
@@ -405,7 +320,6 @@ app.delete('/api/posts/:postId/share/:userId', async (req, res) => {
     }
 });
 
-// DELETE a post
 app.delete('/api/posts/:id', async (req, res) => {
     try {
         await Post.destroy({ where: { id: req.params.id } });
@@ -415,6 +329,8 @@ app.delete('/api/posts/:id', async (req, res) => {
     }
 });
 
+//------------------------------MODERATION------------------------------------
+
 app.post('/api/moderate', async (req, res) => {
     const { title, content } = req.body;
     try {
@@ -422,28 +338,23 @@ app.post('/api/moderate', async (req, res) => {
             anthropic.messages.create({
                 model: 'claude-haiku-4-5-20251001',
                 max_tokens: 100,
-                messages: [
-                    {
-                        role: 'user',
-                        content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a raw JSON object, no markdown, no code fences, no explanation. Only these two formats are allowed: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
+                messages: [{
+                    role: 'user',
+                    content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a raw JSON object, no markdown, no code fences, no explanation. Only these two formats are allowed: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
                     
 Title: ${title}
 Content: ${content}`,
-                    }
-                ],
+                }],
             }),
             new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Moderation timed out')), 10000)
             )
         ]);
-
-        // Strip markdown code fences if the model adds them anyway
         const raw = message.content[0].text.trim()
             .replace(/^```json\s*/i, '')
             .replace(/^```\s*/i, '')
             .replace(/```$/i, '')
             .trim();
-
         const result = JSON.parse(raw);
         res.json(result);
     } catch (err) {
@@ -452,6 +363,8 @@ Content: ${content}`,
     }
 });
 
+//------------------------------SERVER------------------------------------
+
 const PORT = 5000;
 sequelize.sync()
     .then(() => {
@@ -459,7 +372,6 @@ sequelize.sync()
     })
     .catch(err => console.error('Failed to connect to database:', err));
 
-// Generic error handler to return JSON (prevents HTML error pages for API requests)
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     if (res.headersSent) return next(err);
