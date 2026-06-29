@@ -406,18 +406,6 @@ app.delete('/api/posts/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-//--------------------
-
-app.get('/api/admin/hash-passwords', async (req, res) => {
-    const users = await User.findAll();
-    for (const user of users) {
-        if (user.password && !user.password.startsWith('$2b$')) {
-            user.password = await bcrypt.hash(user.password, 10);
-            await user.save();
-        }
-    }
-    res.json({ message: 'All passwords hashed.' });
-});
 
 const PORT = 5000;
 sequelize.sync()
