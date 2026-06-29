@@ -23,26 +23,31 @@ function LoginPage({ onLogin }) {
     const [tab, setTab] = useState('login');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [phone, setPhone] = useState('');
     const [gender, setGender] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
-        if (!email.trim()) {
-            setError('Please enter your email.');
+        if (!email.trim() || !password.trim()) {
+            setError('Please enter your email and password.');
             return;
         }
         setLoading(true);
         setError('');
         try {
-            const res = await fetch(`${BACKEND_URL}/api/users`);
-            const users = await res.json();
-            const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-            if (existing) {
-                onLogin(String(existing.id));
+            const res = await fetch(`${BACKEND_URL}/api/users/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            if (data.id) {
+                onLogin(String(data.id));
             } else {
-                setError('No account found with that email.');
+                setError(data.error || 'Invalid email or password.');
             }
         } catch {
             setError('Could not connect to server. Try again.');
@@ -51,8 +56,12 @@ function LoginPage({ onLogin }) {
     };
 
     const handleRegister = async () => {
-        if (!name.trim() || !email.trim()) {
-            setError('Please enter at least your name and email.');
+        if (!name.trim() || !email.trim() || !password.trim()) {
+            setError('Please enter at least your name, email and password.');
+            return;
+        }
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
             return;
         }
         setLoading(true);
@@ -72,6 +81,7 @@ function LoginPage({ onLogin }) {
                 body: JSON.stringify({
                     name,
                     email,
+                    password,
                     phone: phone.trim() || null,
                     gender: gender.trim() || null,
                     online: true,
@@ -99,13 +109,13 @@ function LoginPage({ onLogin }) {
             <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <Button
                     variant={tab === 'login' ? 'contained' : 'outlined'}
-                    onClick={() => { setTab('login'); setError(''); }}
+                    onClick={() => { setTab('login'); setError(''); setPassword(''); setConfirmPassword(''); }}
                 >
                     Log in
                 </Button>
                 <Button
                     variant={tab === 'register' ? 'contained' : 'outlined'}
-                    onClick={() => { setTab('register'); setError(''); }}
+                    onClick={() => { setTab('register'); setError(''); setPassword(''); setConfirmPassword(''); }}
                 >
                     Register
                 </Button>
@@ -116,6 +126,11 @@ function LoginPage({ onLogin }) {
                     <TextField
                         label="Email" variant="outlined" value={email}
                         onChange={e => setEmail(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    <TextField
+                        label="Password" variant="outlined" type="password" value={password}
+                        onChange={e => setPassword(e.target.value)}
                         style={{ width: '300px' }}
                     />
                     {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -136,6 +151,16 @@ function LoginPage({ onLogin }) {
                     <TextField
                         label="Email" variant="outlined" value={email}
                         onChange={e => setEmail(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    <TextField
+                        label="Password" variant="outlined" type="password" value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    <TextField
+                        label="Confirm Password" variant="outlined" type="password" value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
                         style={{ width: '300px' }}
                     />
                     <TextField
