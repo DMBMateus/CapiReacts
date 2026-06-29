@@ -24,14 +24,18 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    online: {                          // ← new field
+    online: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false,            // new users start offline by default
+        defaultValue: false,
     },
     profile_picture: {
         type: DataTypes.STRING(500),
         allowNull: true,
         defaultValue: '../../Assets/user_icon.png',
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: true,
     },
 });
 

@@ -20,43 +20,70 @@ export const FriendContext = createContext();
 export const ProfileContext = createContext();
 
 function LoginPage({ onLogin }) {
+    const [tab, setTab] = useState('login');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [gender, setGender] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
-        if (!name.trim() || !email.trim()) {
-            setError('Please enter your name and email.');
+        if (!email.trim()) {
+            setError('Please enter your email.');
             return;
         }
         setLoading(true);
         setError('');
-
         try {
-            // Check if user with this email already exists
             const res = await fetch(`${BACKEND_URL}/api/users`);
             const users = await res.json();
             const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
             if (existing) {
-                // User exists → log in
                 onLogin(String(existing.id));
             } else {
-                // User doesn't exist → register
-                const createRes = await fetch(`${BACKEND_URL}/api/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, online: true }),
-                });
-                const newUser = await createRes.json();
-                if (newUser.id) {
-                    onLogin(String(newUser.id));
-                } else {
-                    setError('Failed to create user. Try again.');
-                }
+                setError('No account found with that email.');
             }
-        } catch (err) {
+        } catch {
+            setError('Could not connect to server. Try again.');
+        }
+        setLoading(false);
+    };
+
+    const handleRegister = async () => {
+        if (!name.trim() || !email.trim()) {
+            setError('Please enter at least your name and email.');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/users`);
+            const users = await res.json();
+            const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (existing) {
+                setError('An account with this email already exists. Please log in.');
+                setLoading(false);
+                return;
+            }
+            const createRes = await fetch(`${BACKEND_URL}/api/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    phone: phone.trim() || null,
+                    gender: gender.trim() || null,
+                    online: true,
+                }),
+            });
+            const newUser = await createRes.json();
+            if (newUser.id) {
+                onLogin(String(newUser.id));
+            } else {
+                setError('Failed to create account. Try again.');
+            }
+        } catch {
             setError('Could not connect to server. Try again.');
         }
         setLoading(false);
@@ -64,42 +91,73 @@ function LoginPage({ onLogin }) {
 
     return (
         <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100vh',
-            gap: '1rem',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', height: '100vh', gap: '1rem',
         }}>
             <h1>Welcome to CapiReacts</h1>
-            <p style={{ color: '#666' }}>Enter your details to log in or register</p>
-            <TextField
-                label="Name"
-                variant="outlined"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                style={{ width: '300px' }}
-            />
-            <TextField
-                label="Email"
-                variant="outlined"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                style={{ width: '300px' }}
-            />
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <Button
-                variant="contained"
-                onClick={handleLogin}
-                disabled={loading}
-                style={{ width: '300px' }}
-            >
-                {loading ? 'Loading...' : 'Login / Register'}
-            </Button>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Button
+                    variant={tab === 'login' ? 'contained' : 'outlined'}
+                    onClick={() => { setTab('login'); setError(''); }}
+                >
+                    Log in
+                </Button>
+                <Button
+                    variant={tab === 'register' ? 'contained' : 'outlined'}
+                    onClick={() => { setTab('register'); setError(''); }}
+                >
+                    Register
+                </Button>
+            </div>
+
+            {tab === 'login' && (
+                <>
+                    <TextField
+                        label="Email" variant="outlined" value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    {error && <p style={{ color: 'red' }}>{error}</p>}
+                    <Button variant="contained" onClick={handleLogin}
+                            disabled={loading} style={{ width: '300px' }}>
+                        {loading ? 'Loading...' : 'Log in'}
+                    </Button>
+                </>
+            )}
+
+            {tab === 'register' && (
+                <>
+                    <TextField
+                        label="Name" variant="outlined" value={name}
+                        onChange={e => setName(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    <TextField
+                        label="Email" variant="outlined" value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    <TextField
+                        label="Phone (optional)" variant="outlined" value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    <TextField
+                        label="Gender (optional)" variant="outlined" value={gender}
+                        onChange={e => setGender(e.target.value)}
+                        style={{ width: '300px' }}
+                    />
+                    {error && <p style={{ color: 'red' }}>{error}</p>}
+                    <Button variant="contained" onClick={handleRegister}
+                            disabled={loading} style={{ width: '300px' }}>
+                        {loading ? 'Loading...' : 'Register'}
+                    </Button>
+                </>
+            )}
         </div>
     );
 }
-
 function LandingPage({ onBannerClick }) {
     return (
         <div className="container-app">

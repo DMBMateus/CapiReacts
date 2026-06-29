@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/database');
@@ -47,10 +48,34 @@ const upload = multer({ storage: storage });
 // CREATE a new user
 app.post('/api/users', async (req, res) => {
     try {
-        const user = await User.create(req.body);
+        const userData = { ...req.body };
+        if (userData.password) {
+            userData.password = await bcrypt.hash(userData.password, 10);
+        }
+        const user = await User.create(userData);
         res.json(user);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+app.post('/api/users/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            return res.status(401).json({ error: 'No account found with that email.' });
+        }
+
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) {
+            return res.status(401).json({ error: 'Incorrect password.' });
+        }
+
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -381,7 +406,18 @@ app.delete('/api/posts/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+//--------------------
 
+app.post('/api/admin/hash-passwords', async (req, res) => {
+    const users = await User.findAll();
+    for (const user of users) {
+        if (user.password && !user.password.startsWith('$2b$')) {
+            user.password = await bcrypt.hash(user.password, 10);
+            await user.save();
+        }
+    }
+    res.json({ message: 'All passwords hashed.' });
+});
 
 const PORT = 5000;
 sequelize.sync()
