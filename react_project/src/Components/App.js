@@ -1,6 +1,6 @@
 import BACKEND_URL from '../config';
 import '../Components_CSS/App.css';
-import {ThemeProvider, createTheme, CssBaseline, Button, TextField} from '@mui/material';
+import {ThemeProvider, createTheme, CssBaseline, Button, TextField, Select, MenuItem, InputLabel, FormControl} from '@mui/material';
 import { createContext, useState, useMemo } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Drawer } from '@mui/material';
@@ -179,20 +179,19 @@ function LoginPage({ onLogin }) {
                         onChange={e => setPhone(e.target.value)}
                         style={{ width: '300px' }}
                     />
-                    <TextField
-                        select
-                        label="Gender (optional)"
-                        variant="outlined"
-                        value={gender}
-                        onChange={e => setGender(e.target.value)}
-                        style={{ width: '300px' }}
-                        SelectProps={{ native: true }}
-                    >
-                        <option value="">Select gender...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </TextField>
+                    <FormControl variant="outlined" style={{ width: '300px' }}>
+                        <InputLabel>Gender (optional)</InputLabel>
+                        <Select
+                            value={gender}
+                            onChange={e => setGender(e.target.value)}
+                            label="Gender (optional)"
+                         variant={"outlined"}>
+                            <MenuItem value="">Select gender...</MenuItem>
+                            <MenuItem value="Male">Male</MenuItem>
+                            <MenuItem value="Female">Female</MenuItem>
+                            <MenuItem value="Other">Other</MenuItem>
+                        </Select>
+                    </FormControl>
                     {error && <p style={{ color: 'red' }}>{error}</p>}
                     <Button variant="contained" onClick={handleRegister}
                             disabled={loading} style={{ width: '300px' }}>
