@@ -5,7 +5,7 @@ import new_post from "../../Assets/new_post.png";
 import '../../Components_CSS/NewPost.css';
 import { ProfileContext } from "../App";
 
-function NewPost() {
+function NewPost({ onPostCreated }) {
     const { profile } = useContext(ProfileContext);
     const [newPostOpen, setNewPostOpen] = useState(false);
     const [postTitle, setPostTitle] = useState('');
@@ -64,9 +64,20 @@ function NewPost() {
                 data = { message: text };
             }
 
-            if (res.ok || (data && (data.message === 'Post created' || data.id || data._id || data.user_id))) {
+            if (res.ok && data && data.id) {
+                // Step 3 — Fetch the full post (with author info) to add to the list
+                const fullPost = await fetch(`${BACKEND_URL}/api/posts/${data.id}`)
+                    .then(r => r.json());
+
+                if (onPostCreated) {
+                    onPostCreated({
+                        ...fullPost,
+                        likes_count: fullPost.likes_count ?? 0,
+                        isSharedWithUser: false,
+                    });
+                }
+
                 closeNewPostDialog();
-                window.location.reload();
             } else {
                 setError('Failed to create post: ' + (data?.error || data?.message || 'Unknown error'));
             }

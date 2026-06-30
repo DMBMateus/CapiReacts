@@ -233,7 +233,12 @@ app.post('/api/users/:id/profile_picture', upload.single('image'), async (req, r
 
 app.get('/api/posts/:id', async (req, res) => {
     try {
-        const post = await Post.findByPk(req.params.id);
+        const post = await Post.findByPk(req.params.id, {
+            include: {
+                model: User,
+                attributes: ['name', 'profile_picture', 'id'],
+            }
+        });
         res.json(post);
     } catch (err) {
         res.status(500).json({ error: err.message });

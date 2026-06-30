@@ -8,7 +8,7 @@ import { useTheme } from '@mui/material/styles';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
 import ShareIcon from '@mui/icons-material/Share';
 
-function Posts() {
+function Posts({ onRegisterPostCreated }) {
     const [posts, setPosts] = useState([]);
     const [sortOrder, setSortOrder] = useState('newest'); // 'newest' or 'oldest'
     const { profile } = useContext(ProfileContext); // ← current logged-in user id
@@ -48,6 +48,20 @@ function Posts() {
             })
             .catch(err => console.error('Failed to fetch posts:', err));
     }, [profile]);
+
+    // Called by NewPost when a post is successfully created
+    const handlePostCreated = (newPost) => {
+        setPosts(prev => [newPost, ...prev]);
+        setLikedPosts(prev => ({ ...prev, [newPost.id]: false }));
+    };
+
+    // Register the callback with LandingPage once on mount
+    useEffect(() => {
+        if (onRegisterPostCreated) {
+            onRegisterPostCreated(() => handlePostCreated);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onRegisterPostCreated]);
 
     // derive sorted posts for rendering based on sortOrder
     const sortedPosts = posts.slice().sort((a, b) => {
@@ -186,56 +200,56 @@ function Posts() {
                 {sortedPosts.map(post => {
                     const isShared = post.isSharedWithUser;
                     return (
-                    <div key={post.id} className={`post-card ${isShared ? 'post-card-shared' : ''}`} style={{
-                        background: isShared ? '#FFA500' : theme.palette.primary.main,
-                    }}>
-                        <h4 style={{ margin: 0,}}>{timeAgo(post.createdAt)}</h4>
-                        {isShared && post.sharedByUserName && (
-                            <div style={{
-                                textAlign: 'right',
-                                fontSize: '0.85rem',
-                                color: '#333',
-                                marginBottom: '0.5rem',
-                                fontStyle: 'italic',
-                            }}>
-                                Shared by {post.sharedByUserName}
-                            </div>
-                        )}
-                        <div className="container" style={{ cursor: 'pointer' }} onClick={() => handleAuthorClick(post)}>
-                            <img className="friend-img-post" src={post.User?.profile_picture ? (post.User.profile_picture.startsWith('http') ? post.User.profile_picture : `${BACKEND_URL}${post.User.profile_picture}`) : user_icon} alt="Profile Icon"/>
-                            <h3>{post.User?.name}</h3>
-                        </div>
-                        <h2>{post.title}</h2>
-                        <p style={{
-                            color: theme.palette.secondary.main,
-                        }}>{post.content}</p>
-                        <div className="container">
-                            <img
-                                src={like_button}
-                                onClick={() => handleLike(post.id)}
-                                className="like_button"
-                                alt="like button"
-                            />
-                            <h3 style={{ cursor: 'pointer', color: likedPosts[post.id] ? 'red' : 'grey' }}>
-                                {post.likes_count}
-                            </h3>
-                            <ShareIcon
-                                onClick={() => handleShareClick(post)}
-                                sx={{ cursor: 'pointer', marginLeft: '1rem', fontSize: '1.5rem', color: '#555', transition: 'all 0.2s ease', '&:hover': { color: '#db222a', transform: 'scale(1.2)' } }}
-                            />
-                            {isShared && (
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    color="error"
-                                    onClick={() => handleUnshare(post.id)}
-                                    sx={{ marginLeft: '1rem' }}
-                                >
-                                    Mark as seen
-                                </Button>
+                        <div key={post.id} className={`post-card ${isShared ? 'post-card-shared' : ''}`} style={{
+                            background: isShared ? '#FFA500' : theme.palette.primary.main,
+                        }}>
+                            <h4 style={{ margin: 0,}}>{timeAgo(post.createdAt)}</h4>
+                            {isShared && post.sharedByUserName && (
+                                <div style={{
+                                    textAlign: 'right',
+                                    fontSize: '0.85rem',
+                                    color: '#333',
+                                    marginBottom: '0.5rem',
+                                    fontStyle: 'italic',
+                                }}>
+                                    Shared by {post.sharedByUserName}
+                                </div>
                             )}
+                            <div className="container" style={{ cursor: 'pointer' }} onClick={() => handleAuthorClick(post)}>
+                                <img className="friend-img-post" src={post.User?.profile_picture ? (post.User.profile_picture.startsWith('http') ? post.User.profile_picture : `${BACKEND_URL}${post.User.profile_picture}`) : user_icon} alt="Profile Icon"/>
+                                <h3>{post.User?.name}</h3>
+                            </div>
+                            <h2>{post.title}</h2>
+                            <p style={{
+                                color: theme.palette.secondary.main,
+                            }}>{post.content}</p>
+                            <div className="container">
+                                <img
+                                    src={like_button}
+                                    onClick={() => handleLike(post.id)}
+                                    className="like_button"
+                                    alt="like button"
+                                />
+                                <h3 style={{ cursor: 'pointer', color: likedPosts[post.id] ? 'red' : 'grey' }}>
+                                    {post.likes_count}
+                                </h3>
+                                <ShareIcon
+                                    onClick={() => handleShareClick(post)}
+                                    sx={{ cursor: 'pointer', marginLeft: '1rem', fontSize: '1.5rem', color: '#555', transition: 'all 0.2s ease', '&:hover': { color: '#db222a', transform: 'scale(1.2)' } }}
+                                />
+                                {isShared && (
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleUnshare(post.id)}
+                                        sx={{ marginLeft: '1rem' }}
+                                    >
+                                        Mark as seen
+                                    </Button>
+                                )}
+                            </div>
                         </div>
-                    </div>
                     );
                 })}
             </div>

@@ -207,13 +207,15 @@ function LoginPage({ onLogin }) {
     );
 }
 function LandingPage({ onBannerClick }) {
+    const [onPostCreated, setOnPostCreated] = useState(null);
+
     return (
         <div className="container-app">
             <div className="left-div">
-                <NewPost />
+                <NewPost onPostCreated={onPostCreated} />
                 <Friends />
             </div>
-            <Posts />
+            <Posts onRegisterPostCreated={setOnPostCreated} />
             <div className="wrapper_img" onClick={onBannerClick}>
                 <Banner />
             </div>
