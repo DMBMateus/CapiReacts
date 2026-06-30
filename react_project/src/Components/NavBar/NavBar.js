@@ -28,19 +28,10 @@ function Navbar() {
 
     const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
-    const handleLogout = async () => {
+    const handleLogout = () => {
         handleMenuClose();
-        try {
-            await fetch(`${BACKEND_URL}/api/users/${profile}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ online: false }),
-            });
-        } catch (err) {
-            console.error('Failed to update online status:', err);
-        } finally {
-            window.location.reload();
-        }
+        localStorage.removeItem('session');
+        window.location.reload();
     };
     const openDrawer = (drawer) => {
         setActiveDrawer(drawer);

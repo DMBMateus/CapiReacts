@@ -47,18 +47,38 @@ function FriendsPage() {
     );
 }
 
+const SESSION_DURATION = 5 * 60 * 1000; // 5 minutes in ms
+
+function getStoredProfile() {
+    const stored = localStorage.getItem('session');
+    if (!stored) return null;
+
+    try {
+        const { userId, timestamp } = JSON.parse(stored);
+        const isExpired = Date.now() - timestamp > SESSION_DURATION;
+        if (isExpired) {
+            localStorage.removeItem('session');
+            return null;
+        }
+        return userId;
+    } catch {
+        return null;
+    }
+}
+
 function App() {
     const navigate = useNavigate();
 
     const [mode, setMode] = useState('light');
     const [selectedFriend, setSelectedFriend] = useState(null);
     const [showRemoveFriendButton, setShowRemoveFriendButton] = useState(true);
-    const [profile, setProfile] = useState(null); // ← null until logged in
+    const [profile, setProfile] = useState(getStoredProfile);
     const [friendsList, setFriendsList] = useState([]);
     const [phase, setPhase] = useState('idle');
 
     const handleLogin = (userId) => {
         setProfile(userId);
+        localStorage.setItem('session', JSON.stringify({ userId, timestamp: Date.now() }));
         fetch(`${BACKEND_URL}/api/users/${userId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -66,11 +86,13 @@ function App() {
         }).catch(err => console.error('Failed to set online status:', err));
     };
 
+
     useEffect(() => {
         if (!profile) return;
 
         const handleUnload = () => {
             navigator.sendBeacon(`${BACKEND_URL}/api/users/${profile}/offline`);
+            localStorage.removeItem('session');
         };
 
         window.addEventListener('pagehide', handleUnload);
