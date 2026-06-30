@@ -66,6 +66,14 @@ function getStoredProfile() {
     }
 }
 
+function setOnlineStatus(userId, online) {
+    fetch(`${BACKEND_URL}/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ online }),
+    }).catch(err => console.error('Failed to set online status:', err));
+}
+
 function App() {
     const navigate = useNavigate();
 
@@ -79,20 +87,21 @@ function App() {
     const handleLogin = (userId) => {
         setProfile(userId);
         localStorage.setItem('session', JSON.stringify({ userId, timestamp: Date.now() }));
-        fetch(`${BACKEND_URL}/api/users/${userId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ online: true }),
-        }).catch(err => console.error('Failed to set online status:', err));
+        setOnlineStatus(userId, true);
     };
 
+    // Re-mark as online if a valid session was restored from storage on page load/refresh
+    useEffect(() => {
+        if (profile) {
+            setOnlineStatus(profile, true);
+        }
+    }, []); // intentionally empty — only checks the initial profile value from mount
 
     useEffect(() => {
         if (!profile) return;
 
         const handleUnload = () => {
             navigator.sendBeacon(`${BACKEND_URL}/api/users/${profile}/offline`);
-            localStorage.removeItem('session');
         };
 
         window.addEventListener('pagehide', handleUnload);
