@@ -1,3 +1,23 @@
+________________________________________________________________________________________________________________________
+
+MY INSTRUCTIONS
+___________________________________________________________
+
+To access and manage the Anthropic API keys go to: https://platform.claude.com/dashboard
+This is where you can generate new API keys, view existing keys, and manage their permissions. 
+Make sure to keep your API keys secure and do not share them publicly.
+
+To access where the front-end is run go to: https://vercel.com/diogo-mbm/capi-reacts
+
+To access where the back-end is run go to: https://railway.com/project/34b14281-ff78-41d7-a1fc-c472900384b1/service/961b5bcd-0e92-4ce7-94e2-e79dc63ab182?environmentId=99dc0693-fb9d-4947-a8e9-e2ca17e49608
+
+To access the app in the web go to: https://capi-reacts.vercel.app/
+
+________________________________________________________________________________________________________________________
+
+REACT INSTRUCTIONS BELLOW
+___________________________________________________________
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
