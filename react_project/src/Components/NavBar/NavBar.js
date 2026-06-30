@@ -28,7 +28,20 @@ function Navbar() {
 
     const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
-
+    const handleLogout = async () => {
+        handleMenuClose();
+        try {
+            await fetch(`${BACKEND_URL}/api/users/${profile}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ online: false }),
+            });
+        } catch (err) {
+            console.error('Failed to update online status:', err);
+        } finally {
+            window.location.reload();
+        }
+    };
     const openDrawer = (drawer) => {
         setActiveDrawer(drawer);
         handleMenuClose();
@@ -59,7 +72,7 @@ function Navbar() {
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                 <MenuItem onClick={() => openDrawer("profile")}>View Profile</MenuItem>
                 <MenuItem onClick={() => openDrawer("settings")}>Settings</MenuItem>
-                <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
 
             {/* Profile Drawer */}

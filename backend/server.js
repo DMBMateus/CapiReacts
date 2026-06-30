@@ -90,6 +90,23 @@ app.get('/api/users', async (req, res) => {
     res.json(users);
 });
 
+// UPDATE a user (e.g. online status)
+app.patch('/api/users/:id', async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const { online } = req.body;
+        if (typeof online === 'boolean') {
+            user.online = online;
+        }
+
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 //------------------------------FRIENDS------------------------------------
 
 PostShare.belongsTo(User, {
