@@ -245,8 +245,12 @@ function App() {
 
     const handleLogin = (userId) => {
         setProfile(userId);
+        fetch(`${BACKEND_URL}/api/users/${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ online: true }),
+        }).catch(err => console.error('Failed to set online status:', err));
     };
-
     const handleBannerClick = () => {
         if (phase !== 'idle') return;
         setPhase('expanding');
