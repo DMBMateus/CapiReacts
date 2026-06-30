@@ -11,6 +11,7 @@ const Friendship = require('./models/Friendship');
 const Post = require('./models/Post');
 const PostLike = require('./models/PostLike');
 const PostShare = require('./models/PostShare');
+const Comment = require('./models/Comment');
 const { Op } = require('sequelize');
 const Anthropic = require('@anthropic-ai/sdk');
 
@@ -353,6 +354,58 @@ app.delete('/api/posts/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+//-------------------------------COMMENTS-------------------------------------
+
+Comment.belongsTo(User, { foreignKey: 'user_id' });
+Comment.belongsTo(Post, { foreignKey: 'post_id' });
+Post.hasMany(Comment, { foreignKey: 'post_id' });
+
+// GET all comments for a post
+app.get('/api/posts/:id/comments', async (req, res) => {
+    try {
+        const comments = await Comment.findAll({
+            where: { post_id: req.params.id },
+            include: {
+                model: User,
+                attributes: ['id', 'name', 'profile_picture'],
+            },
+            order: [['createdAt', 'ASC']],
+        });
+        res.json(comments);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// CREATE a comment on a post
+app.post('/api/posts/:id/comments', async (req, res) => {
+    try {
+        const comment = await Comment.create({
+            post_id: req.params.id,
+            user_id: req.body.user_id,
+            content: req.body.content,
+        });
+        const fullComment = await Comment.findByPk(comment.id, {
+            include: {
+                model: User,
+                attributes: ['id', 'name', 'profile_picture'],
+            },
+        });
+        res.json(fullComment);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// DELETE a comment
+app.delete('/api/comments/:id', async (req, res) => {
+    try {
+        await Comment.destroy({ where: { id: req.params.id } });
+        res.json({ message: 'Comment deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 //------------------------------MODERATION------------------------------------
 
@@ -365,10 +418,9 @@ app.post('/api/moderate', async (req, res) => {
                 max_tokens: 100,
                 messages: [{
                     role: 'user',
-                    content: `You are a content moderator. Check if the following post title and content contain any inappropriate text (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a raw JSON object, no markdown, no code fences, no explanation. Only these two formats are allowed: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
+                    content: `You are a content moderator. Check if the following text contains any inappropriate content (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a raw JSON object, no markdown, no code fences, no explanation. Only these two formats are allowed: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
                     
-Title: ${title}
-Content: ${content}`,
+${title ? `Title: ${title}\n` : ''}Content: ${content}`,
                 }],
             }),
             new Promise((_, reject) =>
@@ -400,6 +452,7 @@ app.post('/api/users/:id/offline', async (req, res) => {
         res.sendStatus(500);
     }
 });
+
 //------------------------------SERVER------------------------------------
 
 const PORT = 5000;

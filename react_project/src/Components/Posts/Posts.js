@@ -7,6 +7,7 @@ import { ProfileContext, FriendContext } from "../App";
 import { useTheme } from '@mui/material/styles';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
 import ShareIcon from '@mui/icons-material/Share';
+import Comments from "./Comments";
 
 function Posts({ onRegisterPostCreated }) {
     const [posts, setPosts] = useState([]);
@@ -17,6 +18,8 @@ function Posts({ onRegisterPostCreated }) {
     const [shareDialogOpen, setShareDialogOpen] = useState(false); // ← share dialog state
     const [selectedPostForShare, setSelectedPostForShare] = useState(null); // ← which post to share
     const [sharedPosts, setSharedPosts] = useState({}); // ← tracks shared posts: { userId: [postIds] }
+    const [commentsByPost, setCommentsByPost] = useState({}); // ← tracks comments per post
+
     const theme = useTheme();
 
     useEffect(() => {
@@ -44,6 +47,15 @@ function Posts({ onRegisterPostCreated }) {
                                 setLikedPosts(prev => ({ ...prev, [post.id]: liked }));
                             });
                     });
+                    // For each post, fetch its comments
+                    data.forEach(post => {
+                        fetch(`${BACKEND_URL}/api/posts/${post.id}/comments`)
+                            .then(res => res.json())
+                            .then(comments => {
+                                setCommentsByPost(prev => ({ ...prev, [post.id]: comments }));
+                            })
+                            .catch(err => console.error('Failed to fetch comments:', err));
+                    });
                 }
             })
             .catch(err => console.error('Failed to fetch posts:', err));
@@ -53,6 +65,15 @@ function Posts({ onRegisterPostCreated }) {
     const handlePostCreated = (newPost) => {
         setPosts(prev => [newPost, ...prev]);
         setLikedPosts(prev => ({ ...prev, [newPost.id]: false }));
+        setCommentsByPost(prev => ({ ...prev, [newPost.id]: [] }));
+    };
+
+    // Called by Comments when a new comment is successfully posted
+    const handleCommentAdded = (postId, newComment) => {
+        setCommentsByPost(prev => ({
+            ...prev,
+            [postId]: [...(prev[postId] || []), newComment],
+        }));
     };
 
     // Register the callback with LandingPage once on mount
@@ -249,6 +270,12 @@ function Posts({ onRegisterPostCreated }) {
                                     </Button>
                                 )}
                             </div>
+
+                            <Comments
+                                postId={post.id}
+                                comments={commentsByPost[post.id] || []}
+                                onCommentAdded={(comment) => handleCommentAdded(post.id, comment)}
+                            />
                         </div>
                     );
                 })}
