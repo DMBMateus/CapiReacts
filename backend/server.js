@@ -387,7 +387,19 @@ Content: ${content}`,
         res.json({ approved: true });
     }
 });
-
+//------------------------------HeartBeat---------------------------------
+app.post('/api/users/:id/offline', async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (user) {
+            user.online = false;
+            await user.save();
+        }
+        res.sendStatus(204);
+    } catch (err) {
+        res.sendStatus(500);
+    }
+});
 //------------------------------SERVER------------------------------------
 
 const PORT = 5000;

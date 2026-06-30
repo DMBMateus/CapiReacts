@@ -1,7 +1,7 @@
 import BACKEND_URL from '../config';
 import '../Components_CSS/App.css';
 import {ThemeProvider, createTheme, CssBaseline, Button} from '@mui/material';
-import { createContext, useState, useMemo } from 'react';
+import {createContext, useState, useMemo, useEffect} from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Drawer } from '@mui/material';
 
@@ -65,6 +65,17 @@ function App() {
             body: JSON.stringify({ online: true }),
         }).catch(err => console.error('Failed to set online status:', err));
     };
+
+    useEffect(() => {
+        if (!profile) return;
+
+        const handleUnload = () => {
+            navigator.sendBeacon(`${BACKEND_URL}/api/users/${profile}/offline`);
+        };
+
+        window.addEventListener('pagehide', handleUnload);
+        return () => window.removeEventListener('pagehide', handleUnload);
+    }, [profile]);
 
     const handleBannerClick = () => {
         if (phase !== 'idle') return;
