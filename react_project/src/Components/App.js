@@ -176,6 +176,7 @@ function App() {
                         <Navbar />
 
                         <Routes>
+                            <Route path="/" element={<LandingPage onBannerClick={handleBannerClick} />} />
                             <Route path="/friends" element={<FriendsPage />} />
                         </Routes>
 
