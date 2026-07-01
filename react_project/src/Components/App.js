@@ -6,46 +6,15 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Drawer } from '@mui/material';
 
 import Navbar from "./NavBar/NavBar";
-import Posts from "./Posts/Posts";
 import Profile from "./NavBar/Profile";
-import Friends from "./Friends/Friends";
 import Banner from "./Banner/Banner";
-import AddFriend from "./Friends/AddFriend";
-import NewPost from "./Posts/NewPost";
 import LoginPage from "./Login/LoginPage";
-import capi_body from "../Assets/capi_friends.png"
-import capi_arm from "../Assets/capi_arm.png"
+import LandingPage from "./LandingPage/LandingPage";
+import FriendsPage from "./Friends/FriendsPage";
 
 export const ThemeContext = createContext();
 export const FriendContext = createContext();
 export const ProfileContext = createContext();
-
-function LandingPage({ onBannerClick }) {
-    const [onPostCreated, setOnPostCreated] = useState(null);
-
-    return (
-        <div className="container-app">
-            <div className="left-div">
-                <NewPost onPostCreated={onPostCreated} />
-                <Friends />
-            </div>
-            <Posts onRegisterPostCreated={setOnPostCreated} />
-            <div className="wrapper_img" onClick={onBannerClick}>
-                <Banner />
-            </div>
-        </div>
-    );
-}
-
-function FriendsPage() {
-    return (
-        <div className="container">
-            <AddFriend />
-            <img className="capi-addFriends-body" src={capi_body} alt="Capi animation"/>
-            <img className="capi-addFriends-arm" src={capi_arm} alt="Capi waving arm"/>
-        </div>
-    );
-}
 
 const SESSION_DURATION = 5 * 60 * 1000; // 5 minutes in ms
 
