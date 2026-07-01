@@ -22,9 +22,17 @@ const Post = sequelize.define('Post', {
     likes_count: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
-    }
+    },
+    media_url:  {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    media_type: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
 }, {
-    tableName: 'posts',      // ← matches your existing MySQL table name exactly
+    tableName: 'posts',
 });
 
 module.exports = Post;

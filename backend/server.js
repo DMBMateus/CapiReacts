@@ -39,6 +39,16 @@ const upload = multer({ storage });
 
 const app = express();
 
+const postMediaStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => ({
+        folder: 'capi-reacts/posts',
+        resource_type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'webm'],
+    }),
+});
+const uploadPostMedia = multer({ storage: postMediaStorage });
+
 app.use(cors());
 app.use(express.json());
 
@@ -166,6 +176,18 @@ app.delete('/api/users/:id/friends/:friendId', async (req, res) => {
 
 Post.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(Post, { foreignKey: 'user_id' });
+
+// Add this route BEFORE your existing post routes
+app.post('/api/posts/upload', uploadPostMedia.single('media'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        const media_url = req.file.path;
+        const media_type = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
+        res.json({ media_url, media_type });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 app.get('/api/posts', async (req, res) => {
     try {

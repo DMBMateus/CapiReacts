@@ -241,9 +241,24 @@ function Posts({ onRegisterPostCreated }) {
                                 <h3>{post.User?.name}</h3>
                             </div>
                             <h2>{post.title}</h2>
-                            <p style={{
-                                color: theme.palette.secondary.main,
-                            }}>{post.content}</p>
+                            <p style={{ color: theme.palette.secondary.main }}>{post.content}</p>
+
+                            {post.media_url && (
+                                post.media_type === 'video' ? (
+                                    <video
+                                        controls
+                                        style={{ width: '100%', borderRadius: '8px', marginTop: '0.5rem', maxHeight: '400px' }}
+                                    >
+                                        <source src={post.media_url} />
+                                    </video>
+                                ) : (
+                                    <img
+                                        src={post.media_url}
+                                        alt="Post media"
+                                        style={{ width: '100%', borderRadius: '8px', marginTop: '0.5rem', maxHeight: '400px', objectFit: 'cover' }}
+                                    />
+                                )
+                            )}
                             <div className="container">
                                 <img
                                     src={like_button}

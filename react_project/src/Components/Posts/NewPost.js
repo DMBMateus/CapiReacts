@@ -1,6 +1,8 @@
 import BACKEND_URL from '../../config';
-import { useState, useContext } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
+import { useState, useContext, useRef } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, Box, IconButton } from '@mui/material';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import CloseIcon from '@mui/icons-material/Close';
 import new_post from "../../Assets/new_post.png";
 import '../../Components_CSS/NewPost.css';
 import { ProfileContext } from "../App";
@@ -11,7 +13,12 @@ function NewPost({ onPostCreated }) {
     const [postTitle, setPostTitle] = useState('');
     const [postContent, setPostContent] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loadingStep, setLoadingStep] = useState('');
     const [error, setError] = useState('');
+    const [mediaFile, setMediaFile] = useState(null);
+    const [mediaPreview, setMediaPreview] = useState(null);
+    const [mediaType, setMediaType] = useState(null);
+    const fileInputRef = useRef(null);
 
     const handleNewPostClick = () => setNewPostOpen(true);
 
@@ -21,6 +28,25 @@ function NewPost({ onPostCreated }) {
         setPostTitle('');
         setPostContent('');
         setError('');
+        setMediaFile(null);
+        setMediaPreview(null);
+        setMediaType(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleMediaChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setMediaFile(file);
+        setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
+        setMediaPreview(URL.createObjectURL(file));
+    };
+
+    const removeMedia = () => {
+        setMediaFile(null);
+        setMediaPreview(null);
+        setMediaType(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleCreatePost = async () => {
@@ -29,7 +55,8 @@ function NewPost({ onPostCreated }) {
         setError('');
 
         try {
-            // Step 1 — Moderate content before posting
+            // Step 1 — Moderate content
+            setLoadingStep('Checking content...');
             const modRes = await fetch(`${BACKEND_URL}/api/moderate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -39,16 +66,37 @@ function NewPost({ onPostCreated }) {
 
             if (!modResult.approved) {
                 setError(`Your post was rejected: ${modResult.reason}`);
-                setLoading(false);
                 return;
             }
 
-            // Step 2 — Submit the post if approved
+            // Step 2 — Upload media if selected
+            let media_url = null;
+            let media_type = null;
+
+            if (mediaFile) {
+                setLoadingStep('Uploading media...');
+                const formData = new FormData();
+                formData.append('media', mediaFile);
+                const uploadRes = await fetch(`${BACKEND_URL}/api/posts/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                media_url = uploadData.media_url;
+                media_type = uploadData.media_type;
+            }
+
+            // Step 3 — Create the post
+            setLoadingStep('Posting...');
             const payload = {
                 title: postTitle,
                 content: postContent,
                 user_id: Number(profile),
+                media_url,
+                media_type,
             };
+
             const res = await fetch(`${BACKEND_URL}/api/posts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -64,19 +112,11 @@ function NewPost({ onPostCreated }) {
                 data = { message: text };
             }
 
-            if (res.ok && data && data.id) {
-                // Step 3 — Fetch the full post (with author info) to add to the list
-                const fullPost = await fetch(`${BACKEND_URL}/api/posts/${data.id}`)
-                    .then(r => r.json());
-
+            if (res.ok && data?.id) {
+                const fullPost = await fetch(`${BACKEND_URL}/api/posts/${data.id}`).then(r => r.json());
                 if (onPostCreated) {
-                    onPostCreated({
-                        ...fullPost,
-                        likes_count: fullPost.likes_count ?? 0,
-                        isSharedWithUser: false,
-                    });
+                    onPostCreated({ ...fullPost, likes_count: fullPost.likes_count ?? 0, isSharedWithUser: false });
                 }
-
                 closeNewPostDialog();
             } else {
                 setError('Failed to create post: ' + (data?.error || data?.message || 'Unknown error'));
@@ -85,6 +125,7 @@ function NewPost({ onPostCreated }) {
             setError('Failed to create post: ' + err.message);
         } finally {
             setLoading(false);
+            setLoadingStep('');
         }
     };
 
@@ -125,6 +166,50 @@ function NewPost({ onPostCreated }) {
                         value={postContent}
                         onChange={(e) => setPostContent(e.target.value)}
                     />
+
+                    {/* Media preview */}
+                    {mediaPreview && (
+                        <Box sx={{ position: 'relative', marginTop: '1rem' }}>
+                            <IconButton
+                                size="small"
+                                onClick={removeMedia}
+                                sx={{
+                                    position: 'absolute', top: 4, right: 4, zIndex: 1,
+                                    background: 'rgba(0,0,0,0.5)', color: '#fff',
+                                    '&:hover': { background: 'rgba(0,0,0,0.75)' },
+                                }}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                            {mediaType === 'video' ? (
+                                <video controls style={{ width: '100%', borderRadius: '8px', maxHeight: '300px' }}>
+                                    <source src={mediaPreview} />
+                                </video>
+                            ) : (
+                                <img
+                                    src={mediaPreview}
+                                    alt="Preview"
+                                    style={{ width: '100%', borderRadius: '8px', maxHeight: '300px', objectFit: 'cover' }}
+                                />
+                            )}
+                        </Box>
+                    )}
+
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*"
+                        style={{ display: 'none' }}
+                        onChange={handleMediaChange}
+                    />
+                    <Button
+                        startIcon={<AddPhotoAlternateIcon />}
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={loading}
+                        sx={{ marginTop: '1rem' }}
+                    >
+                        {mediaFile ? 'Change Media' : 'Add Photo / Video'}
+                    </Button>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeNewPostDialog} disabled={loading}>Cancel</Button>
@@ -134,7 +219,7 @@ function NewPost({ onPostCreated }) {
                         color="primary"
                         disabled={!postTitle.trim() || !postContent.trim() || loading}
                     >
-                        {loading ? 'Checking & Posting...' : 'Post'}
+                        {loading ? loadingStep : 'Post'}
                     </Button>
                 </DialogActions>
             </Dialog>
