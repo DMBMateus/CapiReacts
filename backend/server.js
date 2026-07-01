@@ -440,7 +440,7 @@ app.post('/api/moderate', async (req, res) => {
                 max_tokens: 100,
                 messages: [{
                     role: 'user',
-                    content: `You are a content moderator. Check if the following text contains any inappropriate content (hate speech, explicit content, harassment, spam, or offensive language). Reply with ONLY a raw JSON object, no markdown, no code fences, no explanation. Only these two formats are allowed: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
+                    content: `You are a content moderator. Check if the following text contains any inappropriate content (hate speech, explicit content, harassment, spam, or offensive language). Don't worry about file types associated to the post. Check if the content of the image is appropriate. Reply with ONLY a raw JSON object, no markdown, no code fences, no explanation. Only these two formats are allowed: {"approved": true} or {"approved": false, "reason": "brief reason here"}.
                     
 ${title ? `Title: ${title}\n` : ''}Content: ${content}`,
                 }],
